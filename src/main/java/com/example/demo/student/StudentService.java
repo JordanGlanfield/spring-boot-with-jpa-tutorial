@@ -1,5 +1,6 @@
 package com.example.demo.student;
 
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -32,11 +33,31 @@ public class StudentService {
         studentRepository.save(student);
     }
 
+    @Transactional // TODO - what does?
+    public void updateStudent(Student student) {
+        Optional<Student> existingStudentOptional = studentRepository.findById(student.getId());
+
+        if (existingStudentOptional.isEmpty()) {
+            throwStudentDoesNotExist(student.getId());
+        }
+
+        Student existingStudent = existingStudentOptional.get();
+
+        existingStudent.setName(student.getName());
+        existingStudent.setEmail(student.getEmail());
+
+        studentRepository.save(existingStudent);
+    }
+
     public void deleteStudent(Long id) {
         if (!studentRepository.existsById(id)) {
-            throw new IllegalStateException("Student with this id %d' does not exist".formatted(id));
+            throwStudentDoesNotExist(id);
         }
 
         studentRepository.deleteById(id);
+    }
+
+    private void throwStudentDoesNotExist(Long id) {
+        throw new IllegalStateException("Student with this id %d' does not exist".formatted(id));
     }
 }
