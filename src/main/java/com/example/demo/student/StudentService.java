@@ -4,8 +4,6 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.Month;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,12 +31,12 @@ public class StudentService {
         studentRepository.save(student);
     }
 
-    @Transactional // TODO - what does?
+    @Transactional
     public void updateStudent(Student student) {
         Optional<Student> existingStudentOptional = studentRepository.findById(student.getId());
 
         if (existingStudentOptional.isEmpty()) {
-            throwStudentDoesNotExist(student.getId());
+            createStudentDoesNotExistException(student.getId());
         }
 
         Student existingStudent = existingStudentOptional.get();
@@ -49,15 +47,31 @@ public class StudentService {
         studentRepository.save(existingStudent);
     }
 
+    @Transactional
+    public void updateStudent2(Long id, String name, String email) {
+        Student student = studentRepository.findById(id).orElseThrow(() -> createStudentDoesNotExistException(id));
+
+        if (name != null && !name.isEmpty()) {
+            student.setName(name);
+        }
+
+        if (email != null && !email.isEmpty()) {
+            if (studentRepository.findStudentByEmail(email).isPresent()) {
+                throw new IllegalStateException("A student with this email already exists");
+            }
+            student.setEmail(email);
+        }
+    }
+
     public void deleteStudent(Long id) {
         if (!studentRepository.existsById(id)) {
-            throwStudentDoesNotExist(id);
+            throw createStudentDoesNotExistException(id);
         }
 
         studentRepository.deleteById(id);
     }
 
-    private void throwStudentDoesNotExist(Long id) {
-        throw new IllegalStateException("Student with this id %d' does not exist".formatted(id));
+    private RuntimeException createStudentDoesNotExistException(Long id) {
+        return new IllegalStateException("Student with this id %d' does not exist".formatted(id));
     }
 }
